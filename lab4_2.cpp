@@ -2,7 +2,7 @@
 #include <map>
 #include <string>
 #include <clocale>
-
+int const MaxElem =1000;
 using namespace std;
 
 int CodeError = 0; // 0 - ок, 1 - помилка (сутність не знайдена)
@@ -27,25 +27,38 @@ public:
     }
 };
 
+struct mPara {
+Student pib;
+int id;
+}
 class AssocArray {
 private:
-    map<int, Student> data;
+   mPara  data[MaxElem];
+   int current =0;
 
 public:
     // Додати елемент
     void add(int id, const Student& st) {
-        data[id] = st;
+        data[current].pib = st;
+        data[current].id = id;
+        if(current<MaxElem-1) current++; 
     }
 
     // Перевантаження [] - доступ за індексом (id)
     Student operator[](int id) {
-        if (data.find(id) != data.end()) {
-            CodeError = 0;
-            return data[id];
-        } else {
+   bool yes = false;
+        
+   for(int i=0; i<current; i++)
+       if(data[i].id==id)
+       { yes =true;
+        return data[i].pib;
+       }   
+ 
+        if (yes==false) {
             CodeError = 1;
             return Student(); // Повертає пустий об'єкт
         }
+
     }
 
     // Перевантаження виклику функції
@@ -56,7 +69,7 @@ public:
     // Дружнє перевантаження виводу
     friend ostream& operator<<(ostream& out, const AssocArray& aa) {
         for (auto& pair : aa.data) {
-            out << "ID: " << pair.first << " -> " << pair.second << endl;
+            out << "ID: " << pair.id << " -> " << pair.pib << endl;
         }
         return out;
     }
