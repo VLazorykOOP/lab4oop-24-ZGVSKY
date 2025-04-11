@@ -1,64 +1,67 @@
 #include <iostream>
-#include <map>
+#include <vector>
 #include <string>
 #include <clocale>
-int const MaxElem =1000;
+#include <utility>
+#include <fcntl.h>
+#include <io.h>
+
 using namespace std;
 
 int CodeError = 0; // 0 - ок, 1 - помилка (сутність не знайдена)
 
 class Student {
 public:
-    string surname;
-    string name;
-    string patronymic;
+    wstring surname;
+    wstring name;
+    wstring patronymic;
 
-    Student(string s = "", string n = "", string p = "")
+    Student(wstring s = L"", wstring n = L"", wstring p = L"")
         : surname(s), name(n), patronymic(p) {}
 
-    friend ostream& operator<<(ostream& out, const Student& st) {
-        out << st.surname << " " << st.name << " " << st.patronymic;
-        return out;
-    }
+    friend wostream& operator<<(wostream& out, const Student& st);
 
-    friend istream& operator>>(istream& in, Student& st) {
-        in >> st.surname >> st.name >> st.patronymic;
-        return in;
-    }
+    friend wistream& operator>>(wistream& in, Student& st);
+
+
 };
 
-struct mPara {
-Student pib;
-int id;
+wostream& operator<<(wostream& out, const Student& st) {
+    out << st.surname << L" " << st.name << L" " << st.patronymic;
+    return out;
 }
+
+wistream& operator>>(wistream& in, Student& st) {
+    in >> st.surname >> st.name >> st.patronymic;
+    return in;
+}
+
 class AssocArray {
 private:
-   mPara  data[MaxElem];
-   int current =0;
+    vector<pair<int, Student>> data;
 
 public:
     // Додати елемент
     void add(int id, const Student& st) {
-        data[current].pib = st;
-        data[current].id = id;
-        if(current<MaxElem-1) current++; 
+        for (size_t i = 0; i < data.size(); ++i) {
+            if (data[i].first == id) {
+                data[i].second = st;
+                return;
+            }
+        }
+        data.push_back(make_pair(id, st));
     }
 
     // Перевантаження [] - доступ за індексом (id)
     Student operator[](int id) {
-   bool yes = false;
-        
-   for(int i=0; i<current; i++)
-       if(data[i].id==id)
-       { yes =true;
-        return data[i].pib;
-       }   
- 
-        if (yes==false) {
-            CodeError = 1;
-            return Student(); // Повертає пустий об'єкт
+        for (size_t i = 0; i < data.size(); ++i) {
+            if (data[i].first == id) {
+                CodeError = 0;
+                return data[i].second;
+            }
         }
-
+        CodeError = 1;
+        return Student(); // Повертає пустий об'єкт
     }
 
     // Перевантаження виклику функції
@@ -66,69 +69,72 @@ public:
         return (*this)[id];
     }
 
-    // Дружнє перевантаження виводу
-    friend ostream& operator<<(ostream& out, const AssocArray& aa) {
-        for (auto& pair : aa.data) {
-            out << "ID: " << pair.id << " -> " << pair.pib << endl;
-        }
-        return out;
-    }
+    friend wostream& operator<<(wostream& out, const AssocArray& aa);
+    friend wistream& operator>>(wistream& in, AssocArray& aa);
 
-    // Дружнє перевантаження введення (вставка одного студента)
-    friend istream& operator>>(istream& in, AssocArray& aa) {
-        // укр не працює ?
-        int id;
-        Student st;
-        cout << " ID: " << endl;
-        in >> id;
-
-        cout << "  Прізвище: " << endl;
-        in >> st.surname;
-
-        cout << "  Ім'я: " << endl;
-        in >> st.name;
-
-        cout << "  По батькові: " << endl;
-        in >> st.patronymic;
-        cout << st;
-        aa.add(id, st);
-        return in;
-    }
 };
+// Дружнє перевантаження виводу
+wostream& operator<<(wostream& out, const AssocArray& aa) {
+    for (size_t i = 0; i < aa.data.size(); ++i) {
+        out << L"ID: " << aa.data[i].first << L" -> " << aa.data[i].second << endl;
+    }
+    return out;
+}
 
+// Дружнє перевантаження введення (вставка одного студента)
+wistream& operator>>(wistream& in, AssocArray& aa) {
+    int id;
+    Student st;
+    wcout << L" ID: " << endl;
+    in >> id;
+
+    wcout << L"  Прізвище: " << endl;
+    in >> st.surname;
+
+    wcout << L"  Ім'я: " << endl;
+    in >> st.name;
+
+    wcout << L"  По батькові: " << endl;
+    in >> st.patronymic;
+    aa.add(id, st);
+    return in;
+}
 // Функція створення тестового набору
 AssocArray createSampleData() {
     AssocArray aa;
-    aa.add(1, Student("Іваненко", "Іван", "Іванович"));
-    aa.add(2, Student("Петренко", "Петро", "Петрович"));
-    aa.add(3, Student("Сидоренко", "Сидір", "Сидорович"));
+    aa.add(1, Student(L"Іваненко", L"Іван", L"Іванович"));
+    aa.add(2, Student(L"Петренко", L"Петро", L"Петрович"));
+    aa.add(3, Student(L"Сидоренко", L"Сидір", L"Сидорович"));
     return aa;
 }
 
 int main() {
-    system("chcp 65001");
+    setlocale(LC_ALL, "");
+    _setmode(_fileno(stdout), _O_U16TEXT);
+    _setmode(_fileno(stdin), _O_U16TEXT);
+
     AssocArray aa = createSampleData();
 
-    cout << "=== Вміст асоціативного масиву ===" << endl;
-    cout << aa;
+    wcout << L"=== Вміст асоціативного масиву ===" << endl;
+    wcout << aa;
 
-    cout << "\n=== Перевірка доступу через operator[] ===" << endl;
+    wcout << L"\n=== Перевірка доступу через operator[] ===" << endl;
     Student s1 = aa[2];
-    if (!CodeError) cout << "ID 2: " << s1 << endl;
-    else cout << "Студент з ID 2 не знайдений\n";
+    if (!CodeError) wcout << L"ID 2: " << s1 << endl;
+    else wcout << L"Студент з ID 2 не знайдений\n";
 
-    Student s2 = aa[5]; // Несуществующий ID
-    if (!CodeError) cout << "ID 5: " << s2 << endl;
-    else cout << "Студент з ID 5 не знайдений (CodeError = " << CodeError << ")\n";
+    Student s2 = aa[5];
+    if (!CodeError) wcout << L"ID 5: " << s2 << endl;
+    else wcout << L"Студент з ID 5 не знайдений (CodeError = " << CodeError << L")\n";
 
-    cout << "\n=== Перевірка доступу через operator() ===" << endl;
-    cout << "ID 1: " << aa(1) << endl;
+    wcout << L"\n=== Перевірка доступу через operator() ===" << endl;
+    wcout << L"ID 1: " << aa(1) << endl;
 
-    cout << "\n=== Тест введення нового студента ===" << endl;
-    cin >> aa;
+    wcout << L"\n=== Тест введення нового студента ===" << endl;
+    wcin >> aa;
 
-    cout << "\n=== Оновлений список студентів ===" << endl;
-    cout << aa;
+    wcout << L"\n=== Оновлений список студентів ===" << endl;
+    wcout << aa;
 
     return 0;
 }
